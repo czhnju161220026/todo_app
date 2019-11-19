@@ -1,6 +1,4 @@
 import { Card, Icon, Tooltip, Avatar } from 'antd'
-import todo from '../../img/todo.png'
-import done from '../../img/done.png'
 
 export function Item(props) {
     const style = {
