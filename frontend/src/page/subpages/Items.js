@@ -17,7 +17,9 @@ export function Items(props) {
             pub_date={item.pub_date}
             isDone={item.isDone}
             finish={props.finish}
-            delete={props.delete}>
+            delete={props.delete}
+            edit={props.edit}
+            >
         </Item>
     });
     let rows = [];

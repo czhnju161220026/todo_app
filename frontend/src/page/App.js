@@ -3,56 +3,12 @@ import moment from "moment"
 import { Layout, Menu, Icon, Button } from 'antd';
 import { Items } from './subpages/Items'
 import { CreateForm } from './subpages/CreateForm'
+import { UpdateForm}  from './subpages/UpdateForm'
 import Link from 'umi/link'
 import axios from 'axios'
 
 const { Header, Footer, Sider, Content } = Layout;
-const SubMenu = Menu.SubMenu;
-//  创建一些测试数据
-const todoItems = [
-    {
-        id: 1,
-        title: "Go to Market",
-        content: "Buy ingredients to prepare dinner",
-        pub_date: "2019-9-1",
-        isDone: true
-    },
-    {
-        id: 2,
-        title: "Study",
-        content: "Read Algebra and History textbook for upcoming test",
-        pub_date: "2019-9-2",
-        isDone: false
-    },
-    {
-        id: 3,
-        title: "Sally's books",
-        content: "Go to library to rent sally's books",
-        pub_date: "2019-9-3",
-        isDone: true
-    },
-    {
-        id: 4,
-        title: "Article",
-        content: "Write article on how to use django with react",
-        pub_date: "2019-9-4",
-        isDone: false
-    },
-    {
-        id: 5,
-        title: "Article",
-        content: "Write article on how to use django with react",
-        pub_date: "2019-9-1",
-        isDone: false
-    },
-    {
-        id: 6,
-        title: "Article",
-        content: "Write article on how to use django with react",
-        pub_date: "2019-9-5",
-        isDone: false
-    }
-];
+ 
 
 export class App extends React.Component {
     constructor(props) {
@@ -61,43 +17,70 @@ export class App extends React.Component {
             todoList: [],
             displayFinishedItems: false,
             collapsed: false,
-            modalVisible: false,
+            createModalVisible: false,
+            updateModalVisible: false,
+            currentItem: {},
         }
         this.finish = this.finish.bind(this);
         this.delete = this.delete.bind(this);
+        this.edit = this.edit.bind(this);
     }
     //展示对话框
-    showModal() {
-        this.setState({ modalVisible: true });
+    showModal(type) {
+        if(type==='create') {
+            this.setState({ createModalVisible: true });
+        }
+        else if(type === 'update'){
+            this.setState({ updateModalVisible: true});
+        }
+        
     }
 
     //隐藏对话框
     handleCancle = () => {
-        this.setState({ modalVisible: false });
+        this.setState({ createModalVisible: false, updateModalVisible: false });
     }
 
     //处理表单提交
     //TODO: 应该post到后端
     handleCreate = () => {
-        const { form } = this.formRef.props;
+        const { form } = this.createFormRef.props;
         form.validateFields((err, values) => {
             if (err) {
                 return;
             }
             console.log('Received values of form: ', values);
             //TODO: 在这里我应该将新加入的待办发送到后端
-            const todoList = this.state.todoList;
             let now = moment().format('YYYY-MM-DD');
             let newTodo = {id: null, title: values.title, content: values.description, isDone: false, pub_date: now}
             this.updateTodoList(newTodo);
             form.resetFields();
-            this.setState({ modalVisible: false });
+            this.setState({ createModalVisible: false });
         });
 
     }
 
-    saveFormRef = formRef => {
-        this.formRef = formRef;
+    //处理编辑待办
+    handleUpdate = () => {
+        const {form} = this.updateFormRef.props;
+        form.validateFields((err,values)=>{
+            if (err) {
+                return;
+            }
+            console.log('Received values of form: ', values);
+            let newTodo = {id: this.state.currentItem.id, title: values.title, content: values.description, isDone: this.state.currentItem.isDone, pub_date: this.state.currentItem.pub_date};
+            this.updateTodoList(newTodo);
+            form.resetFields();
+            this.setState({ updateModalVisible: false});
+        });
+    }
+
+    saveCreateFormRef = createFormRef => {
+        this.createFormRef = createFormRef;
+    };
+
+    saveUpdateFormRef = updateFormRef => {
+        this.updateFormRef = updateFormRef;
     };
 
     //折叠sider
@@ -138,7 +121,13 @@ export class App extends React.Component {
     //TODO: delete到后端
     delete(id) {
         axios.delete(`http://localhost:8000/api/todos/${id}`)
-        .then(res=>this.refreshTodoList())
+        .then(res=>this.refreshTodoList());
+    }
+
+    //编辑某个待办
+    edit(item) {
+        this.setState({currentItem:item});
+        this.showModal('update');
     }
 
 
@@ -148,17 +137,17 @@ export class App extends React.Component {
             width: '860px',
             margin: '20px',
         };
-        return <Button type='dashed' style={style} onClick={() => this.showModal()}>+ 创建新待办</Button>
+        return <Button type='dashed' style={style} onClick={() => this.showModal('create')}>+ 创建新待办</Button>
     }
 
     getItems() {
         const flag = this.state.displayFinishedItems;
         const todoList = this.state.todoList;
         if (flag) {
-            return <div><Items isDone={true} todoList={todoList} finish={this.finish} delete={this.delete}></Items></div>;
+            return <div><Items isDone={true} todoList={todoList} finish={this.finish} delete={this.delete} edit={this.edit}></Items></div>;
         }
         else {
-            return <div>{this.getCreateButton()} <Items isDone={false} todoList={todoList} finish={this.finish} delete={this.delete}></Items></div>;
+            return <div>{this.getCreateButton()} <Items isDone={false} todoList={todoList} finish={this.finish} delete={this.delete} edit={this.edit}></Items></div>;
         }
     }
 
@@ -178,7 +167,7 @@ export class App extends React.Component {
         //若id非空，则是修改，否则是添加
         if(item.id) {
             axios.put(`http://localhost:8000/api/todos/${item.id}/`, item)
-            then(res=>this.refreshTodoList())
+            .then(res=>this.refreshTodoList())
             .catch(e=>console.log(e));
         }
         else {
@@ -221,10 +210,16 @@ export class App extends React.Component {
                     <Content style={{ margin: '24px 16px 0' }}>
                         <div style={{ padding: 24, background: '#fff', minHeight: 360 }}>
                             <CreateForm
-                                wrappedComponentRef={this.saveFormRef}
-                                visible={this.state.modalVisible}
+                                wrappedComponentRef={this.saveCreateFormRef}
+                                visible={this.state.createModalVisible}
                                 onCancel={this.handleCancle}
                                 onCreate={this.handleCreate}
+                            />
+                            <UpdateForm
+                                wrappedComponentRef={this.saveUpdateFormRef}
+                                visible={this.state.updateModalVisible}
+                                onCancel={this.handleCancle}
+                                onUpdate={this.handleUpdate}
                             />
                             {this.getItems()}
                         </div>

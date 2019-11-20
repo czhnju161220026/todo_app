@@ -10,7 +10,7 @@ export function Item(props) {
 
     return <Card style={style} actions={[
         <Tooltip title='完成' placement='bottomLeft'><Icon type="check" key="check" onClick={() => {props.finish(props.id)}}/></Tooltip>, 
-        <Tooltip title='编辑' placement='bottom'><Icon type="edit" key="edit" /></Tooltip>,
+        <Tooltip title='编辑' placement='bottom'><Icon type="edit" key="edit" onClick={()=>{props.edit(props)}}/></Tooltip>,
         <Tooltip title='删除' placement='bottomRight'><Icon type="close" key="delete" onClick={() => {props.delete(props.id)}}/></Tooltip>
         ,
     ]}>
