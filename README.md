@@ -16,6 +16,7 @@
   + 安装cnpm
   + cnpm install
   + cnpm run dev
++ 然后在http://localhost:3000端口应该可以访问服务
 
 
 
